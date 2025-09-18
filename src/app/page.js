@@ -11,13 +11,13 @@ export default function Home() {
           Day 1: 我的第一个Next.js应用
         </p>
         <p className="text-sm text-gray-600 mb-8">
-          最新部署时间: {deployTime}
+          最新部署时间: 19：06
         </p>
         <div className="bg-blue-100 p-6 rounded-lg">
           <h2 className="text-2xl mb-4">今天的目标</h2>
           <ul className="text-left">
-            <li>✅ 搭建开发环境</li>
-            <li>✅ 创建Next.js项目</li>
+            <li>✅ 搭建开发环境22</li>
+            <li>✅ 创建Next.js项目33</li>
             <li>🚀 部署到Vercel</li>
             <li>🌐 绑定自定义域名</li>
           </ul>
