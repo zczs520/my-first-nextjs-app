@@ -1,85 +1,145 @@
- 'use client'
- 
- import { useState } from 'react'
- 
- export default function AuthPage() {
-   const [email, setEmail] = useState('')
-   const [password, setPassword] = useState('')
-   const [loading, setLoading] = useState(false)
-   const [error, setError] = useState('')
- 
-   async function handleSubmit(e) {
-     e.preventDefault()
-     setError('')
-     setLoading(true)
-     try {
-       // TODO: Hook up your real auth logic (e.g., Supabase, NextAuth, custom API)
-       // This dummy timeout simulates a request to avoid immediate resolution that can mask UI issues.
-       await new Promise((res) => setTimeout(res, 400))
-       console.log('Submitting auth with', { email, password })
-       // On success, you can redirect with next/navigation or update state accordingly
-       // Example: router.push('/dashboard')
-     } catch (err) {
-       console.error(err)
-       setError('登录失败，请稍后重试。')
-     } finally {
-       setLoading(false)
-     }
-   }
- 
-   return (
-     <div className="min-h-[60vh] flex items-center justify-center p-6">
-       <div className="w-full max-w-md border rounded-lg p-6 shadow-sm">
-         <h1 className="text-2xl font-semibold mb-1">登录</h1>
-         <p className="text-sm text-gray-500 mb-6">请输入邮箱与密码继续</p>
- 
-         {error && (
-           <div className="mb-4 rounded bg-red-50 text-red-700 px-3 py-2 text-sm">
-             {error}
-           </div>
-         )}
- 
-         <form onSubmit={handleSubmit} className="space-y-4">
-           <div>
-             <label className="block text-sm mb-1" htmlFor="email">邮箱</label>
-             <input
-               id="email"
-               type="email"
-               value={email}
-               onChange={(e) => setEmail(e.target.value)}
-               required
-               className="w-full border rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
-               placeholder="you@example.com"
-             />
-           </div>
- 
-           <div>
-             <label className="block text-sm mb-1" htmlFor="password">密码</label>
-             <input
-               id="password"
-               type="password"
-               value={password}
-               onChange={(e) => setPassword(e.target.value)}
-               required
-               className="w-full border rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
-               placeholder="••••••••"
-             />
-           </div>
- 
-           <button
-             type="submit"
-             disabled={loading}
-             className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded px-4 py-2"
-           >
-             {loading ? '正在登录…' : '登录'}
-           </button>
-         </form>
- 
-         <p className="text-xs text-gray-500 mt-4">
-           提示：此为示例页面。请将提交逻辑接入真实的认证服务（如 Supabase / NextAuth）。
-         </p>
-       </div>
-     </div>
-   )
-}
+'use client'
+import { useState } from 'react'
+import { useAuth } from '@/lib/AuthContext'
+import { useRouter } from 'next/navigation'
 
+export default function AuthPage() {
+  const [isLogin, setIsLogin] = useState(true)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
+
+  const { signIn, signUp } = useAuth()
+  const router = useRouter()
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setMessage('')
+
+    try {
+      let result
+      if (isLogin) {
+        result = await signIn(email, password)
+      } else {
+        result = await signUp(email, password, {
+          metadata: { full_name: fullName }
+        })
+      }
+
+      if (result.error) {
+        setMessage(result.error.message)
+      } else {
+        if (isLogin) {
+          router.push('/dashboard')
+        } else {
+          setMessage('注册成功！请检查邮箱验证链接。')
+        }
+      }
+    } catch (error) {
+      setMessage('操作失败，请稍后重试。')
+    }
+
+    setLoading(false)
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          {isLogin ? '登录账号' : '创建账号'}
+        </h2>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          {isLogin ? '还没有账号？' : '已有账号？'}
+          <button
+            onClick={() => setIsLogin(!isLogin)}
+            className="font-medium text-blue-600 hover:text-blue-500"
+          >
+            {isLogin ? '立即注册' : '立即登录'}
+          </button>
+        </p>
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {!isLogin && (
+              <div>
+                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
+                  姓名
+                </label>
+                <div className="mt-1">
+                  <input
+                    id="fullName"
+                    name="fullName"
+                    type="text"
+                    required={!isLogin}
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                邮箱地址
+              </label>
+              <div className="mt-1">
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                密码
+              </label>
+              <div className="mt-1">
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete={isLogin ? "current-password" : "new-password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
+            </div>
+
+            {message && (
+              <div className={`p-3 rounded-md text-sm ${
+                message.includes('成功') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+              }`}>
+                {message}
+              </div>
+            )}
+
+            <div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                {loading ? '处理中...' : (isLogin ? '登录' : '注册')}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  )
+}
