@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/lib/AuthContext'
+import { useAuth } from '../../../lib/AuthContext'
 import { supabase } from '../../../lib/supabase'
 import ProjectForm from '@/components/ProjectForm'
 import ProjectCard from '@/components/ProjectCard'
