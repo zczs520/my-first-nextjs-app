@@ -1,10 +1,19 @@
-"use client"
+'use client'
 import Link from 'next/link'
 import { useState } from 'react'
+import { useAuth } from '../lib/AuthContext'
+import { useRouter } from 'next/navigation'
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  
+  const { user, signOut } = useAuth()
+  const router = useRouter()
+
+  const handleSignOut = async () => {
+    await signOut()
+    setIsMenuOpen(false)
+  }
+
   const navigation = [
     { name: '首页', href: '/' },
     { name: '关于', href: '/about' },
@@ -33,6 +42,30 @@ export default function Header() {
               </Link>
             ))}
           </nav>
+
+          {/* 右侧登录状态（桌面端） */}
+          <div className="hidden md:flex items-center gap-4">
+            {!user ? (
+              <Link
+                href="/auth"
+                className="px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+              >
+                登录
+              </Link>
+            ) : (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-gray-700">
+                  已登录：{user.email}
+                </span>
+                <button
+                  onClick={handleSignOut}
+                  className="px-3 py-1.5 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
+                  退出登录
+                </button>
+              </div>
+            )}
+          </div>
           
           {/* 移动端菜单按钮 */}
           <button
@@ -66,6 +99,31 @@ export default function Header() {
                 {item.name}
               </Link>
             ))}
+            
+            {/* 移动端登录状态 */}
+            <div className="mt-2 pt-2 border-t">
+              {!user ? (
+                <Link
+                  href="/auth"
+                  className="block py-2 text-blue-600 font-medium"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  去登录 →
+                </Link>
+              ) : (
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-gray-700 truncate max-w-[60%]">
+                    {user.email}
+                  </span>
+                  <button
+                    onClick={() => { setIsMenuOpen(false); handleSignOut() }}
+                    className="text-red-600"
+                  >
+                    退出
+                  </button>
+                </div>
+              )}
+            </div>
           </nav>
         )}
       </div>
