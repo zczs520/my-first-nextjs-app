@@ -1,5 +1,4 @@
-import dynamic from 'next/dynamic'
-const BlogClient = dynamic(() => import('../../components/BlogClient'), { ssr: false })
+import ClientBlogView from './ClientView'
 
 export const metadata = {
   title: '学习博客',
@@ -7,5 +6,5 @@ export const metadata = {
 }
 
 export default function Blog() {
-  return <BlogClient />
+  return <ClientBlogView />
 }
