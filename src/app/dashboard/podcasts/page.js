@@ -45,6 +45,19 @@ export default function PodcastsManagement() {
       .split(',')
       .map(s => s.trim())
       .filter(Boolean)
+    const buildSlug = (t) => {
+      const base = (t || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9\u4e00-\u9fa5\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .slice(0, 80)
+        .replace(/^-+|-+$/g, '')
+      return base || `post-${Date.now().toString(36)}`
+    }
+    const slug = buildSlug(title)
+    const read_time = Math.max(1, Math.ceil((content || '').length / 1000))
+    const published_at = status === 'published' ? new Date().toISOString() : null
+    const featured_image = null // 如需图片上传，后续在编辑器表单中增加字段
 
     if (!title) return { success: false, error: '标题必填' }
 
@@ -57,6 +70,10 @@ export default function PodcastsManagement() {
           excerpt,
           status,
           tags,
+          slug,
+          read_time,
+          featured_image,
+          published_at: status === 'published' ? new Date().toISOString() : editing.published_at,
           updated_at: new Date().toISOString()
         })
         .eq('id', editing.id)
@@ -79,7 +96,11 @@ export default function PodcastsManagement() {
         excerpt,
         category: '播客',
         tags,
-        status
+        status,
+        slug,
+        read_time,
+        featured_image,
+        published_at
       }])
       .select()
 
