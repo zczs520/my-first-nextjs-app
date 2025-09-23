@@ -35,10 +35,10 @@ export default function AuthPage() {
     try {
       if (isLogin) {
         // 登录
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        })
+        const timeoutMs = 15000
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject({ status: 'TIMEOUT', message: '请求超时，请检查网络或目标服务可达性' }), timeoutMs))
+        const signInPromise = supabase.auth.signInWithPassword({ email, password })
+        const { error } = await Promise.race([signInPromise, timeoutPromise])
         if (error) {
           setMessage(formatAuthError(error))
           setErrorDetail({ status: error.status ?? null, message: error.message ?? '' })
@@ -66,10 +66,14 @@ export default function AuthPage() {
       }
     } catch (error) {
       console.error('认证错误:', error)
-      setMessage(`操作失败: ${error.message}`)
+      if (error && error.status === 'TIMEOUT') {
+        setMessage('登录请求超时：可能被网络拦截或目标服务不可达。请稍后再试，或检查网络/Supabase 可用性。')
+      } else {
+        setMessage(`操作失败: ${error?.message || '未知错误'}`)
+      }
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   const handleResetPassword = async () => {
