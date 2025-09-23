@@ -10,12 +10,27 @@ export default function AuthPage() {
   const [fullName, setFullName] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [errorDetail, setErrorDetail] = useState(null)
   const router = useRouter()
+
+  const formatAuthError = (err) => {
+    if (!err) return ''
+    const status = err.status
+    const msg = err.message || '未知错误'
+    let hint = ''
+    if (status === 400) {
+      hint = '可能原因：1) 邮箱或密码不正确；2) 邮箱未完成验证；3) 生产环境变量未正确配置。'
+    } else if (status === 422) {
+      hint = '请求参数无效，请检查邮箱格式与密码长度。'
+    }
+    return `登录失败 (${status ?? '未知状态'}): ${msg}。${hint}`
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setMessage('')
+    setErrorDetail(null)
 
     try {
       if (isLogin) {
@@ -25,7 +40,8 @@ export default function AuthPage() {
           password,
         })
         if (error) {
-          setMessage(`登录失败: ${error.message}`)
+          setMessage(formatAuthError(error))
+          setErrorDetail({ status: error.status ?? null, message: error.message ?? '' })
         } else {
           setMessage('登录成功！正在跳转...')
           setTimeout(() => router.push('/dashboard'), 800)
@@ -54,6 +70,25 @@ export default function AuthPage() {
     }
 
     setLoading(false)
+  }
+
+  const handleResetPassword = async () => {
+    setLoading(true)
+    setMessage('')
+    try {
+      if (!email) {
+        setMessage('请先在邮箱输入框填写你的邮箱地址，再点击“忘记密码？”')
+        return
+      }
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email)
+      if (error) {
+        setMessage(`重置密码邮件发送失败(${error.status ?? '未知'}): ${error.message}`)
+      } else {
+        setMessage('已发送重置密码邮件，请前往邮箱检查。')
+      }
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -150,6 +185,20 @@ export default function AuthPage() {
                   'bg-red-100 text-red-700 border-red-200'
               }`}>
                 {message}
+                {errorDetail && (
+                  <div className="mt-2 text-xs text-gray-600">
+                    <div>状态码：{String(errorDetail.status ?? '未知')}</div>
+                    <div>后端信息：{errorDetail.message || '无'}</div>
+                    <div className="mt-1">
+                      建议：
+                      <ul className="list-disc list-inside">
+                        <li>确认邮箱与密码输入正确（注意大小写与空格）。</li>
+                        <li>若项目开启邮箱验证，请先完成邮箱验证。</li>
+                        <li>如在生产环境，请确认 Vercel 中 NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY 已正确配置。</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -176,10 +225,7 @@ export default function AuthPage() {
 
           {isLogin && (
             <div className="mt-4 text-center">
-              <button
-                onClick={() => setMessage('密码重置功能开发中...')}
-                className="text-sm text-blue-600 hover:text-blue-500"
-              >
+              <button onClick={handleResetPassword} className="text-sm text-blue-600 hover:text-blue-500">
                 忘记密码？
               </button>
             </div>
