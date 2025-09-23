@@ -11,6 +11,10 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [errorDetail, setErrorDetail] = useState(null)
+  const [loginMethod, setLoginMethod] = useState('otp') // 仍保留，但下方两个方式同时展示
+  const [otpSent, setOtpSent] = useState(false)
+  const [otpCode, setOtpCode] = useState('')
+  const [otpCountdown, setOtpCountdown] = useState(0)
   const router = useRouter()
 
   const formatAuthError = (err) => {
@@ -23,6 +27,44 @@ export default function AuthPage() {
     } else if (status === 422) {
       hint = '请求参数无效，请检查邮箱格式与密码长度。'
     }
+
+  // 发送邮箱验证码（OTP 登录）
+  const handleSendOtp = async () => {
+    if (!email) {
+      setMessage('请先填写邮箱地址，再发送验证码')
+      return
+    }
+    setLoading(true)
+    setMessage('')
+    try {
+      const { data, error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: true, // 若不存在则创建
+          emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth` : undefined,
+        },
+      })
+      if (error) {
+        setMessage(`发送验证码失败: ${error.message}`)
+      } else {
+        setOtpSent(true)
+        setMessage('验证码已发送到邮箱，请查收并输入')
+        // 启动 60 秒倒计时
+        setOtpCountdown(60)
+        const timer = setInterval(() => {
+          setOtpCountdown((t) => {
+            if (t <= 1) {
+              clearInterval(timer)
+              return 0
+            }
+            return t - 1
+          })
+        }, 1000)
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
     return `登录失败 (${status ?? '未知状态'}): ${msg}。${hint}`
   }
 
@@ -34,11 +76,45 @@ export default function AuthPage() {
 
     try {
       if (isLogin) {
-        // 登录
-        const timeoutMs = 15000
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject({ status: 'TIMEOUT', message: '请求超时，请检查网络或目标服务可达性' }), timeoutMs))
-        const signInPromise = supabase.auth.signInWithPassword({ email, password })
-        const { error } = await Promise.race([signInPromise, timeoutPromise])
+        if (loginMethod === 'otp') {
+          // 验证邮箱验证码（OTP）
+          if (!email) {
+            setMessage('请先填写邮箱，再进行验证码登录')
+            return
+          }
+          if (!otpCode) {
+            setMessage('请输入邮箱收到的验证码')
+            return
+          }
+          // verifyOtp 会完成登录
+          const { data, error } = await supabase.auth.verifyOtp({
+            email,
+            token: otpCode,
+            type: 'email',
+          })
+          if (error) {
+            setMessage(`验证码登录失败: ${error.message}`)
+          } else {
+            setMessage('登录成功！正在跳转...')
+            setTimeout(() => router.push('/dashboard'), 800)
+          }
+          return
+        }
+        // 密码登录：增加更长超时和一次重试
+        const doSignIn = async () => {
+          const timeoutMs = 30000
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject({ status: 'TIMEOUT', message: '请求超时，请检查网络或目标服务可达性' }), timeoutMs))
+          const signInPromise = supabase.auth.signInWithPassword({ email, password })
+          return await Promise.race([signInPromise, timeoutPromise])
+        }
+
+        let { error } = await doSignIn()
+        if (error && (error.status === 'TIMEOUT')) {
+          // 等待1秒后重试一次
+          await new Promise(r => setTimeout(r, 1000))
+          const ret = await doSignIn()
+          error = ret.error
+        }
         if (error) {
           setMessage(formatAuthError(error))
           setErrorDetail({ status: error.status ?? null, message: error.message ?? '' })
@@ -101,6 +177,11 @@ export default function AuthPage() {
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
           {isLogin ? '登录账号' : '创建账号'}
         </h2>
+        {isLogin && (
+          <div className="mt-3 text-center text-sm bg-yellow-50 text-yellow-800 border border-yellow-200 rounded p-3">
+            为提高成功率，<span className="font-medium">推荐使用“验证码登录”</span>。某些网络下“密码登录”可能连接较慢或超时。
+          </div>
+        )}
         <p className="mt-2 text-center text-sm text-gray-600">
           {isLogin ? '还没有账号？' : '已有账号？'}
           <button
@@ -117,6 +198,19 @@ export default function AuthPage() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          {/* 登录/注册切换（两个登录方式将同时展示，避免切换看不到的问题） */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-sm text-gray-600">
+              {isLogin ? '还没有账号？' : '已有账号？'}
+              <button
+                onClick={() => { setIsLogin(!isLogin); setMessage(''); setErrorDetail(null) }}
+                className="font-medium text-blue-600 hover:text-blue-500 ml-1"
+              >
+                {isLogin ? '立即注册' : '立即登录'}
+              </button>
+            </div>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-6">
             {!isLogin && (
               <div>
@@ -157,30 +251,62 @@ export default function AuthPage() {
               </div>
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                密码 *
-              </label>
-              <div className="mt-1">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete={isLogin ? "current-password" : "new-password"}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder={isLogin ? "请输入密码" : "请设置密码（至少6位）"}
-                  minLength={isLogin ? undefined : 6}
-                />
+            {/* 密码登录（方式一） */}
+            {isLogin && (
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  密码 {isLogin && '*'}
+                </label>
+                <div className="mt-1">
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autoComplete={isLogin ? "current-password" : "new-password"}
+                    required={loginMethod === 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    placeholder={isLogin ? "请输入密码" : "请设置密码（至少6位）"}
+                    minLength={isLogin ? undefined : 6}
+                  />
+                </div>
+                {!isLogin && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    密码至少6个字符
+                  </p>
+                )}
               </div>
-              {!isLogin && (
-                <p className="mt-1 text-xs text-gray-500">
-                  密码至少6个字符
-                </p>
-              )}
-            </div>
+            )}
+
+            {/* 验证码登录（方式二，推荐） */}
+            {isLogin && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  邮箱验证码
+                </label>
+                <div className="mt-1 flex gap-2">
+                  <input
+                    id="otpCode"
+                    name="otpCode"
+                    type="text"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value)}
+                    className="flex-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    placeholder="请输入邮箱收到的验证码"
+                  />
+                  <button
+                    type="button"
+                    disabled={loading || otpCountdown > 0}
+                    onClick={handleSendOtp}
+                    className="px-3 py-2 rounded-md border text-sm disabled:opacity-50"
+                  >
+                    {otpCountdown > 0 ? `${otpCountdown}s` : (otpSent ? '重新发送' : '发送验证码')}
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">推荐优先使用验证码登录；若收不到邮件，可改用密码登录。</p>
+              </div>
+            )}
 
             {message && (
               <div className={`p-3 rounded-md text-sm border ${
