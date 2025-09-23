@@ -123,11 +123,12 @@ export default function AuthPage() {
     setLoading(true)
     setMessage('')
     try {
+      // 发送 6 位邮箱验证码（非 Magic Link）：不要设置 emailRedirectTo
       const { data, error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          shouldCreateUser: true, // 若不存在则创建
-          emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth` : undefined,
+          shouldCreateUser: true,
+          channel: 'email',
         },
       })
       if (error) {
@@ -198,7 +199,7 @@ export default function AuthPage() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          {/* 登录/注册切换（两个登录方式将同时展示，避免切换看不到的问题） */}
+          {/* 登录/注册切换 + 登录方式切换 */}
           <div className="flex items-center justify-between mb-4">
             <div className="text-sm text-gray-600">
               {isLogin ? '还没有账号？' : '已有账号？'}
@@ -209,6 +210,24 @@ export default function AuthPage() {
                 {isLogin ? '立即注册' : '立即登录'}
               </button>
             </div>
+            {isLogin && (
+              <div className="flex border rounded overflow-hidden text-sm">
+                <button
+                  type="button"
+                  className={`px-3 py-1 ${loginMethod === 'password' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'}`}
+                  onClick={() => { setLoginMethod('password'); setMessage(''); setErrorDetail(null) }}
+                >
+                  密码登录
+                </button>
+                <button
+                  type="button"
+                  className={`px-3 py-1 ${loginMethod === 'otp' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'}`}
+                  onClick={() => { setLoginMethod('otp'); setMessage(''); setErrorDetail(null) }}
+                >
+                  验证码登录
+                </button>
+              </div>
+            )}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -252,7 +271,7 @@ export default function AuthPage() {
             </div>
 
             {/* 密码登录（方式一） */}
-            {isLogin && (
+            {isLogin && loginMethod === 'password' && (
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                   密码 {isLogin && '*'}
@@ -280,7 +299,7 @@ export default function AuthPage() {
             )}
 
             {/* 验证码登录（方式二，推荐） */}
-            {isLogin && (
+            {isLogin && loginMethod === 'otp' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700">
                   邮箱验证码
@@ -304,7 +323,7 @@ export default function AuthPage() {
                     {otpCountdown > 0 ? `${otpCountdown}s` : (otpSent ? '重新发送' : '发送验证码')}
                   </button>
                 </div>
-                <p className="mt-1 text-xs text-gray-500">推荐优先使用验证码登录；若收不到邮件，可改用密码登录。</p>
+                <p className="mt-1 text-xs text-gray-500">推荐优先使用验证码登录；若收到的是 Magic Link，请直接点击邮件中的“Log In”完成登录。</p>
               </div>
             )}
 
