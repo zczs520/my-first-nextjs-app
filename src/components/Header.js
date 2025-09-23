@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const { user, signOut, loading } = useAuth()
+  const { user, signOut } = useAuth()
   const router = useRouter()
 
   const handleSignOut = async () => {
@@ -45,9 +45,7 @@ export default function Header() {
 
           {/* 右侧登录状态（桌面端） */}
           <div className="hidden md:flex items-center gap-4">
-            {loading ? (
-              <span className="text-gray-500 text-sm">加载中...</span>
-            ) : !user ? (
+            {!user ? (
               <Link
                 href="/auth"
                 className="px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
@@ -56,6 +54,12 @@ export default function Header() {
               </Link>
             ) : (
               <div className="flex items-center gap-3">
+                <Link
+                  href="/dashboard"
+                  className="px-3 py-1.5 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
+                  仪表盘
+                </Link>
                 <span className="text-sm text-gray-700">
                   已登录：{user.email}
                 </span>
@@ -104,9 +108,7 @@ export default function Header() {
             
             {/* 移动端登录状态 */}
             <div className="mt-2 pt-2 border-t">
-              {loading ? (
-                <div className="py-2 text-gray-500 text-sm">加载中...</div>
-              ) : !user ? (
+              {!user ? (
                 <Link
                   href="/auth"
                   className="block py-2 text-blue-600 font-medium"
@@ -116,9 +118,12 @@ export default function Header() {
                 </Link>
               ) : (
                 <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-gray-700 truncate max-w-[60%]">
-                    {user.email}
-                  </span>
+                  <div className="flex items-center gap-3 truncate max-w-[70%]">
+                    <Link href="/dashboard" onClick={() => setIsMenuOpen(false)} className="text-sm text-gray-700 underline">
+                      仪表盘
+                    </Link>
+                    <span className="text-sm text-gray-700 truncate">{user.email}</span>
+                  </div>
                   <button
                     onClick={() => { setIsMenuOpen(false); handleSignOut() }}
                     className="text-red-600"
