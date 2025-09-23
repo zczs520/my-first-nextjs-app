@@ -27,44 +27,6 @@ export default function AuthPage() {
     } else if (status === 422) {
       hint = '请求参数无效，请检查邮箱格式与密码长度。'
     }
-
-  // 发送邮箱验证码（OTP 登录）
-  const handleSendOtp = async () => {
-    if (!email) {
-      setMessage('请先填写邮箱地址，再发送验证码')
-      return
-    }
-    setLoading(true)
-    setMessage('')
-    try {
-      const { data, error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: true, // 若不存在则创建
-          emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth` : undefined,
-        },
-      })
-      if (error) {
-        setMessage(`发送验证码失败: ${error.message}`)
-      } else {
-        setOtpSent(true)
-        setMessage('验证码已发送到邮箱，请查收并输入')
-        // 启动 60 秒倒计时
-        setOtpCountdown(60)
-        const timer = setInterval(() => {
-          setOtpCountdown((t) => {
-            if (t <= 1) {
-              clearInterval(timer)
-              return 0
-            }
-            return t - 1
-          })
-        }, 1000)
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
     return `登录失败 (${status ?? '未知状态'}): ${msg}。${hint}`
   }
 
@@ -146,6 +108,44 @@ export default function AuthPage() {
         setMessage('登录请求超时：可能被网络拦截或目标服务不可达。请稍后再试，或检查网络/Supabase 可用性。')
       } else {
         setMessage(`操作失败: ${error?.message || '未知错误'}`)
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 发送邮箱验证码（OTP 登录）
+  async function handleSendOtp() {
+    if (!email) {
+      setMessage('请先填写邮箱地址，再发送验证码')
+      return
+    }
+    setLoading(true)
+    setMessage('')
+    try {
+      const { data, error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: true, // 若不存在则创建
+          emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth` : undefined,
+        },
+      })
+      if (error) {
+        setMessage(`发送验证码失败: ${error.message}`)
+      } else {
+        setOtpSent(true)
+        setMessage('验证码已发送到邮箱，请查收并输入')
+        // 启动 60 秒倒计时
+        setOtpCountdown(60)
+        const timer = setInterval(() => {
+          setOtpCountdown((t) => {
+            if (t <= 1) {
+              clearInterval(timer)
+              return 0
+            }
+            return t - 1
+          })
+        }, 1000)
       }
     } finally {
       setLoading(false)

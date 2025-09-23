@@ -21,15 +21,15 @@ export default function RootLayout({ children }) {
   return (
     <html lang="zh-CN">
       <body className={inter.className}>
-        <div className="min-h-screen flex flex-col">
-          <Header />
-          <main className="flex-grow">
-            <AuthProvider>
+        <AuthProvider>
+          <div className="min-h-screen flex flex-col">
+            <Header />
+            <main className="flex-grow">
               {children}
-            </AuthProvider>
-          </main>
-          <Footer />
-        </div>
+            </main>
+            <Footer />
+          </div>
+        </AuthProvider>
       </body>
     </html>
   )

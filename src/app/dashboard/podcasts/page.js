@@ -34,6 +34,29 @@ export default function PodcastsManagement() {
     setLoadingList(false)
   }
 
+  // 生成唯一 slug（全表唯一），必要时追加 -2, -3 ...
+  const ensureUniqueSlug = async (baseSlug, excludeId = null) => {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select('id, slug')
+      .ilike('slug', `${baseSlug}%`)
+
+    if (error || !data?.length) return baseSlug
+
+    // 建立已占用集合（排除自己）
+    const taken = new Set(
+      data.filter(r => (excludeId ? r.id !== excludeId : true)).map(r => r.slug)
+    )
+    if (!taken.has(baseSlug)) return baseSlug
+
+    for (let i = 2; i < 200; i++) {
+      const candidate = `${baseSlug}-${i}`
+      if (!taken.has(candidate)) return candidate
+    }
+    // 极端情况，追加时间戳兜底
+    return `${baseSlug}-${Date.now().toString(36)}`
+  }
+
   const handleSubmit = async (formData) => {
     // BlogEditor 传入的是 FormData，转换字段
     const title = formData.get('title')?.toString().trim()
@@ -54,7 +77,7 @@ export default function PodcastsManagement() {
         .replace(/^-+|-+$/g, '')
       return base || `post-${Date.now().toString(36)}`
     }
-    const slug = buildSlug(title)
+    let slug = buildSlug(title)
     const read_time = Math.max(1, Math.ceil((content || '').length / 1000))
     const published_at = status === 'published' ? new Date().toISOString() : null
     const featured_image = null // 如需图片上传，后续在编辑器表单中增加字段
@@ -62,6 +85,7 @@ export default function PodcastsManagement() {
     if (!title) return { success: false, error: '标题必填' }
 
     if (editing) {
+      slug = await ensureUniqueSlug(slug, editing.id)
       const { data, error } = await supabase
         .from('blog_posts')
         .update({
@@ -87,6 +111,7 @@ export default function PodcastsManagement() {
       return { success: true, data: data[0] }
     }
 
+    slug = await ensureUniqueSlug(slug)
     const { data, error } = await supabase
       .from('blog_posts')
       .insert([{
