@@ -20,6 +20,14 @@ export default function DashboardPage() {
             <h2 className="text-xl font-semibold mb-2">消息中心</h2>
             <p className="text-gray-600">查看系统消息与提醒。</p>
           </a>
+
+          <a
+            href="/dashboard/podcasts"
+            className="block bg-white rounded-xl shadow hover:shadow-md transition p-6"
+          >
+            <h2 className="text-xl font-semibold mb-2">播客管理</h2>
+            <p className="text-gray-600">上传与管理播客内容（预览版）。</p>
+          </a>
         </div>
       </div>
     </div>

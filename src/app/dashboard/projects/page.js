@@ -108,12 +108,20 @@ export default function ProjectsManagement() {
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">项目管理</h1>
-          <button
-            onClick={() => setShowForm(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            + 创建新项目
-          </button>
+          <div className="flex items-center gap-3">
+            <a
+              href="/dashboard/podcasts"
+              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              播客管理
+            </a>
+            <button
+              onClick={() => setShowForm(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              + 创建新项目
+            </button>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-4 gap-4 mb-8">

@@ -51,7 +51,7 @@ export default function BlogEditor({ onSubmit, onCancel, initialData = null }) {
 
   const categories = [
     '学习记录', '技术分享', '项目总结', '心得体会', 
-    '工具推荐', '问题解决', '其他'
+    '工具推荐', '问题解决', '播客', '其他'
   ]
 
   return (
