@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const { user, signOut } = useAuth()
+  const { user, signOut, loading } = useAuth()
   const router = useRouter()
 
   const handleSignOut = async () => {
@@ -45,7 +45,9 @@ export default function Header() {
 
           {/* 右侧登录状态（桌面端） */}
           <div className="hidden md:flex items-center gap-4">
-            {!user ? (
+            {loading ? (
+              <span className="text-gray-500 text-sm">加载中...</span>
+            ) : !user ? (
               <Link
                 href="/auth"
                 className="px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
@@ -102,7 +104,9 @@ export default function Header() {
             
             {/* 移动端登录状态 */}
             <div className="mt-2 pt-2 border-t">
-              {!user ? (
+              {loading ? (
+                <div className="py-2 text-gray-500 text-sm">加载中...</div>
+              ) : !user ? (
                 <Link
                   href="/auth"
                   className="block py-2 text-blue-600 font-medium"
