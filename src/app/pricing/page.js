@@ -29,14 +29,30 @@ export default function PricingPage() {
       })
       
       const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP ${response.status}: 创建订阅失败`)
+      }
+      
       if (data.url) {
+        console.log('跳转到 Stripe 支付页面:', data.url)
         window.location.href = data.url
       } else {
-        throw new Error(data.error || '创建订阅失败')
+        throw new Error(data.error || '未收到支付链接')
       }
     } catch (error) {
-      console.error('订阅失败:', error)
-      alert('订阅失败，请稍后重试')
+      console.error('订阅失败详情:', error)
+      
+      let errorMessage = '订阅失败，请稍后重试'
+      if (error.message.includes('price ID not configured')) {
+        errorMessage = '订阅服务暂时不可用，请联系客服'
+      } else if (error.message.includes('User not found')) {
+        errorMessage = '用户信息异常，请重新登录后再试'
+      } else if (error.message.includes('Missing STRIPE_SECRET_KEY')) {
+        errorMessage = '支付服务配置异常，请联系客服'
+      }
+      
+      alert(errorMessage)
     } finally {
       setLoading(false)
     }

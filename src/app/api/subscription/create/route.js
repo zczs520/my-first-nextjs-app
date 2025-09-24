@@ -23,14 +23,44 @@ export async function POST(req) {
     }
     
     // 获取用户信息
-    const { data: user, error: userError } = await supabase
+    let { data: user, error: userError } = await supabase
       .from('user_profiles')
       .select('stripe_customer_id')
       .eq('id', userId)
       .single()
     
     if (userError) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      console.error('获取用户信息失败:', userError)
+      if (userError.code === 'PGRST116') {
+        // 用户配置不存在，尝试创建
+        const { error: createError } = await supabase
+          .from('user_profiles')
+          .insert({
+            id: userId,
+            subscription_tier: 'free',
+            subscription_status: 'inactive'
+          })
+        
+        if (createError) {
+          console.error('创建用户配置失败:', createError)
+          return NextResponse.json({ error: 'Failed to create user profile' }, { status: 500 })
+        }
+        
+        // 重新获取用户信息
+        const { data: newUser, error: newUserError } = await supabase
+          .from('user_profiles')
+          .select('stripe_customer_id')
+          .eq('id', userId)
+          .single()
+        
+        if (newUserError) {
+          return NextResponse.json({ error: 'User profile creation failed' }, { status: 500 })
+        }
+        
+        user = newUser
+      } else {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      }
     }
     
     let customerId = user.stripe_customer_id
@@ -53,15 +83,31 @@ export async function POST(req) {
     
     // 根据计划类型选择价格 ID（需要在 Stripe Dashboard 中创建）
     const priceIds = {
-      monthly: process.env.STRIPE_MONTHLY_PRICE_ID || 'price_monthly_default',
-      yearly: process.env.STRIPE_YEARLY_PRICE_ID || 'price_yearly_default'
+      monthly: process.env.STRIPE_MONTHLY_PRICE_ID,
+      yearly: process.env.STRIPE_YEARLY_PRICE_ID
     }
+    
+    const priceId = priceIds[planType]
+    
+    // 检查价格 ID 是否配置
+    if (!priceId) {
+      console.error(`Missing Stripe price ID for plan: ${planType}`)
+      console.error('Available environment variables:', {
+        STRIPE_MONTHLY_PRICE_ID: process.env.STRIPE_MONTHLY_PRICE_ID ? 'SET' : 'NOT_SET',
+        STRIPE_YEARLY_PRICE_ID: process.env.STRIPE_YEARLY_PRICE_ID ? 'SET' : 'NOT_SET'
+      })
+      return NextResponse.json({ 
+        error: `Stripe price ID not configured for ${planType} plan. Please contact support.` 
+      }, { status: 500 })
+    }
+    
+    console.log(`Creating subscription session for user ${userId}, plan: ${planType}, priceId: ${priceId}`)
     
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customerId,
       line_items: [{
-        price: priceIds[planType],
+        price: priceId,
         quantity: 1,
       }],
       success_url: `${baseUrl}/dashboard?subscription=success`,
