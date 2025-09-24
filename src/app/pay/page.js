@@ -33,8 +33,8 @@ export default function PayPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-16">
       <div className="container mx-auto px-4 max-w-xl">
-        <h1 className="text-3xl font-bold mb-4">支付测试（支付宝）</h1>
-        <p className="text-gray-600 mb-6">仅用于验证支付链路。默认金额 ¥9.90，可修改。</p>
+        <h1 className="text-3xl font-bold mb-4">支付测试 💳</h1>
+        <p className="text-gray-600 mb-6">支持卡支付、支付宝、微信支付。默认金额 ¥9.90，可修改。</p>
 
         <div className="bg-white rounded-lg shadow p-6 space-y-4">
           <div>

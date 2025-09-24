@@ -23,19 +23,25 @@ export async function POST(req) {
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || getBaseUrl(req)
-    const pm = (process.env.STRIPE_PM || 'card').toLowerCase() // 'card' | 'alipay'
+    const pm = (process.env.STRIPE_PM || 'card').toLowerCase() // 'card' | 'alipay' | 'wechat_pay'
 
-    const isAlipay = pm === 'alipay'
-    const currency = isAlipay ? 'cny' : 'usd'
+    // 支付方式配置
+    const paymentConfig = {
+      card: { method: 'card', currency: 'usd', name: 'Test Order (Card)', locale: undefined },
+      alipay: { method: 'alipay', currency: 'cny', name: '测试订单（支付宝）', locale: 'zh' },
+      wechat_pay: { method: 'wechat_pay', currency: 'cny', name: '测试订单（微信支付）', locale: 'zh' }
+    }
+
+    const config = paymentConfig[pm] || paymentConfig.card
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
-      payment_method_types: [isAlipay ? 'alipay' : 'card'],
+      payment_method_types: [config.method],
       line_items: [
         {
           price_data: {
-            currency,
-            product_data: { name: isAlipay ? '测试订单（支付宝）' : 'Test Order (Card)' },
+            currency: config.currency,
+            product_data: { name: config.name },
             unit_amount: amount,
           },
           quantity: 1,
@@ -43,7 +49,7 @@ export async function POST(req) {
       ],
       success_url: `${baseUrl}/pay/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/pay/cancel`,
-      locale: isAlipay ? 'zh' : undefined,
+      locale: config.locale,
     })
 
     return NextResponse.json({ id: session.id, url: session.url, pm })
