@@ -1,7 +1,46 @@
 'use client'
 import Link from 'next/link'
+import { useState } from 'react'
+import { useAuth } from '@/lib/AuthContext'
 
 export default function PricingPage() {
+  const { user } = useAuth()
+  const [loading, setLoading] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState('monthly')
+  
+  const handleSubscribe = async (planType) => {
+    if (!user) {
+      // 未登录用户跳转到登录页
+      window.location.href = '/auth'
+      return
+    }
+    
+    setLoading(true)
+    try {
+      const response = await fetch('/api/subscription/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          planType
+        })
+      })
+      
+      const data = await response.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        throw new Error(data.error || '创建订阅失败')
+      }
+    } catch (error) {
+      console.error('订阅失败:', error)
+      alert('订阅失败，请稍后重试')
+    } finally {
+      setLoading(false)
+    }
+  }
   const plans = [
     {
       name: '免费版',
@@ -58,10 +97,24 @@ export default function PricingPage() {
               从免费开始，随时升级到会员版解锁更多功能
             </p>
             <div className="inline-flex items-center bg-white rounded-lg p-1 shadow-sm">
-              <button className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-medium">
+              <button 
+                onClick={() => setSelectedPlan('monthly')}
+                className={`px-4 py-2 rounded-md text-sm font-medium ${
+                  selectedPlan === 'monthly' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
                 月付
               </button>
-              <button className="px-4 py-2 rounded-md text-gray-600 text-sm font-medium hover:text-gray-900">
+              <button 
+                onClick={() => setSelectedPlan('yearly')}
+                className={`px-4 py-2 rounded-md text-sm font-medium ${
+                  selectedPlan === 'yearly' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
                 年付 (省 17%)
               </button>
             </div>
@@ -131,9 +184,19 @@ export default function PricingPage() {
                 </div>
 
                 <button
-                  className={`w-full py-3 px-6 rounded-lg text-white font-medium transition-colors ${plan.buttonStyle}`}
+                  onClick={() => {
+                    if (plan.name === '免费版') {
+                      // 免费版跳转到注册页
+                      window.location.href = user ? '/dashboard' : '/auth'
+                    } else {
+                      // 会员版开始订阅
+                      handleSubscribe(selectedPlan)
+                    }
+                  }}
+                  disabled={loading}
+                  className={`w-full py-3 px-6 rounded-lg text-white font-medium transition-colors disabled:opacity-50 ${plan.buttonStyle}`}
                 >
-                  {plan.buttonText}
+                  {loading && plan.name === '会员版' ? '处理中...' : plan.buttonText}
                 </button>
               </div>
             ))}

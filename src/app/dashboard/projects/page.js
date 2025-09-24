@@ -5,6 +5,8 @@ import { useAuth } from '../../../lib/AuthContext'
 import supabase from '../../../lib/supabase'
 import ProjectForm from '@/components/ProjectForm'
 import ProjectCard from '@/components/ProjectCard'
+import SubscriptionLimitModal from '@/components/SubscriptionLimitModal'
+import { canCreateResource, updateUserUsage } from '@/lib/subscription'
 
 export default function ProjectsManagement() {
   const { user, loading } = useAuth()
@@ -12,6 +14,7 @@ export default function ProjectsManagement() {
   const [projects, setProjects] = useState([])
   const [loadingProjects, setLoadingProjects] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [showLimitModal, setShowLimitModal] = useState(false)
 
   useEffect(() => {
     if (!loading && !user) {
@@ -36,6 +39,13 @@ export default function ProjectsManagement() {
   }
 
   const handleCreateProject = async (formData) => {
+    // 检查是否可以创建项目
+    const canCreate = await canCreateResource(user.id, 'project')
+    if (!canCreate) {
+      setShowLimitModal(true)
+      return { success: false, error: '已达到免费版项目数量限制' }
+    }
+
     const title = formData.get('title')
     const description = formData.get('description')
     const category = formData.get('category') || '其他'
@@ -66,6 +76,9 @@ export default function ProjectsManagement() {
       return { success: false, error: '创建项目失败，请稍后重试' }
     }
 
+    // 更新用户使用统计
+    await updateUserUsage(user.id, 'project', 'increment')
+    
     setProjects(prev => [data[0], ...prev])
     setShowForm(false)
     return { success: true, data: data[0] }
@@ -200,6 +213,15 @@ export default function ProjectsManagement() {
             </div>
           </div>
         )}
+
+        {/* 订阅限制提示弹窗 */}
+        <SubscriptionLimitModal
+          isOpen={showLimitModal}
+          onClose={() => setShowLimitModal(false)}
+          resourceType="project"
+          currentCount={projects.length}
+          limit={3}
+        />
       </div>
     </div>
   )
