@@ -1,8 +1,44 @@
+'use client'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '../../lib/AuthContext'
+
 export default function DashboardPage() {
+  const { user, loading, initializing } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    // 等待认证初始化完成
+    if (initializing) return
+    
+    // 认证检查
+    if (!loading && !user) {
+      console.log('用户未登录，跳转到登录页')
+      router.push('/auth')
+      return
+    }
+  }, [user, loading, initializing, router])
+
+  // 显示加载状态
+  if (initializing || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-xl">加载中...</div>
+      </div>
+    )
+  }
+
+  // 如果没有用户且不在加载中，不渲染任何内容（会被重定向）
+  if (!user) {
+    return null
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-10">
       <div className="container mx-auto px-4">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">仪表盘</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-6">
+          欢迎回来，{user.email}
+        </h1>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           <a

@@ -58,7 +58,8 @@ export default function AuthPage() {
             setMessage(`验证码登录失败: ${error.message}`)
           } else {
             setMessage('登录成功！正在跳转...')
-            setTimeout(() => router.push('/dashboard'), 800)
+            // 立即跳转，让 AuthContext 处理状态同步
+            router.push('/dashboard')
           }
           return
         }
@@ -82,7 +83,8 @@ export default function AuthPage() {
           setErrorDetail({ status: error.status ?? null, message: error.message ?? '' })
         } else {
           setMessage('登录成功！正在跳转...')
-          setTimeout(() => router.push('/dashboard'), 800)
+          // 立即跳转，让 AuthContext 处理状态同步
+          router.push('/dashboard')
         }
       } else {
         // 注册

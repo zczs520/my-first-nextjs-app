@@ -15,13 +15,26 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [initializing, setInitializing] = useState(true)
 
   useEffect(() => {
     // 获取当前用户
     const getCurrentUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setUser(session?.user ?? null)
-      setLoading(false)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        setUser(session?.user ?? null)
+        
+        // 如果有用户，创建或更新用户配置
+        if (session?.user) {
+          await createUserProfile(session.user)
+        }
+      } catch (error) {
+        console.error('获取当前用户失败:', error)
+        setUser(null)
+      } finally {
+        setLoading(false)
+        setInitializing(false)
+      }
     }
 
     getCurrentUser()
@@ -29,12 +42,19 @@ export const AuthProvider = ({ children }) => {
     // 监听认证状态变化
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('认证状态变化:', event, session?.user?.email)
+        
         setUser(session?.user ?? null)
         setLoading(false)
         
         // 用户登录后创建或更新用户配置
         if (event === 'SIGNED_IN' && session?.user) {
           await createUserProfile(session.user)
+        }
+        
+        // 登出时清理状态
+        if (event === 'SIGNED_OUT') {
+          setUser(null)
         }
       }
     )
@@ -99,6 +119,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     loading,
+    initializing,
     signIn,
     signUp,
     signOut,

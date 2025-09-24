@@ -9,23 +9,33 @@ import SubscriptionLimitModal from '@/components/SubscriptionLimitModal'
 import { canCreateResource, updateUserUsage } from '@/lib/subscription'
 
 export default function ProjectsManagement() {
-  const { user, loading } = useAuth()
+  const { user, loading, initializing } = useAuth()
   const router = useRouter()
   const [projects, setProjects] = useState([])
   const [loadingProjects, setLoadingProjects] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [showLimitModal, setShowLimitModal] = useState(false)
+  const [authChecked, setAuthChecked] = useState(false)
 
   useEffect(() => {
+    // 等待认证初始化完成
+    if (initializing) return
+    
+    // 认证检查
     if (!loading && !user) {
+      console.log('用户未登录，跳转到登录页')
       router.push('/auth')
       return
     }
-    if (user) {
+    
+    // 用户已登录，加载项目
+    if (user && !authChecked) {
+      console.log('用户已登录，加载项目:', user.email)
+      setAuthChecked(true)
       loadProjects()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, loading])
+  }, [user, loading, initializing, authChecked])
 
   const loadProjects = async () => {
     setLoadingProjects(true)
@@ -108,12 +118,18 @@ export default function ProjectsManagement() {
     }
   }
 
-  if (loading || loadingProjects) {
+  // 显示加载状态
+  if (initializing || loading || (user && loadingProjects)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-xl">加载中...</div>
       </div>
     )
+  }
+
+  // 如果没有用户且不在加载中，不渲染任何内容（会被重定向）
+  if (!user) {
+    return null
   }
 
   return (
