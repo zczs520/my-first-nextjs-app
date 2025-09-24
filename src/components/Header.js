@@ -19,6 +19,7 @@ export default function Header() {
     { name: '关于', href: '/about' },
     { name: '项目', href: '/projects' },
     { name: '博客', href: '/blog' },
+    { name: '会员', href: '/pricing' },
     { name: '联系', href: '/contact' },
   ]
 
