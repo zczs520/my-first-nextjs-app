@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import ProjectCard from '@/components/ProjectCard'
 import { useAuth } from '@/lib/AuthContext'
-import { supabase } from '@/lib/supabase'
+import supabase from '@/lib/supabase'
 
 const defaultProjects = [
   { id: 'd1', title: '个人品牌网站', category: '全栈开发', description: '使用Next.js构建的响应式个人网站，包含博客、项目展示等功能。', tech_stack: ['Next.js', 'Tailwind', 'Vercel'], status: 'in_progress' },

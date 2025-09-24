@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/lib/AuthContext'
-import { supabase } from '@/lib/supabase'
+import supabase from '@/lib/supabase'
 
 const defaultPosts = [
   { id: 'b1', title: 'Day 1: 从零开始的Next.js之旅', excerpt: '记录第一天学习Next.js的心得体会，从环境搭建到第一个应用上线的完整过程。', category: '学习记录', read_time: 5, tags: ['Next.js', '环境搭建', 'Vercel'], created_at: '2024-09-18' },

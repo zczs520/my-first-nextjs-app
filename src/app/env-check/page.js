@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { supabase } from '../../lib/supabase'
+import supabase from '../../lib/supabase'
 
 export default function EnvCheck() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''

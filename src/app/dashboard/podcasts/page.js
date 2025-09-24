@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../../lib/AuthContext'
-import { supabase } from '../../../lib/supabase'
+import supabase from '../../../lib/supabase'
 import BlogEditor from '@/components/BlogEditor'
 
 export default function PodcastsManagement() {
