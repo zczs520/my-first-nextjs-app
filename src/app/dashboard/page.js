@@ -50,6 +50,22 @@ export default function DashboardPage() {
           </a>
 
           <a
+            href="/blog"
+            className="block bg-white rounded-xl shadow hover:shadow-md transition p-6"
+          >
+            <h2 className="text-xl font-semibold mb-2">博客管理</h2>
+            <p className="text-gray-600">创建和发布你的博客文章，分享学习心得。</p>
+          </a>
+
+          <a
+            href="/dashboard/subscription"
+            className="block bg-white rounded-xl shadow hover:shadow-md transition p-6 border-2 border-blue-200"
+          >
+            <h2 className="text-xl font-semibold mb-2 text-blue-600">订阅管理</h2>
+            <p className="text-gray-600">管理你的会员订阅，查看使用统计和自动续费设置。</p>
+          </a>
+
+          <a
             href="/dashboard/messages"
             className="block bg-white rounded-xl shadow hover:shadow-md transition p-6"
           >
@@ -63,6 +79,14 @@ export default function DashboardPage() {
           >
             <h2 className="text-xl font-semibold mb-2">播客管理</h2>
             <p className="text-gray-600">上传与管理播客内容（预览版）。</p>
+          </a>
+
+          <a
+            href="/pricing"
+            className="block bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl shadow hover:shadow-md transition p-6"
+          >
+            <h2 className="text-xl font-semibold mb-2">升级会员</h2>
+            <p className="text-blue-100">解锁无限制创建项目和博客，享受更多高级功能。</p>
           </a>
         </div>
       </div>
