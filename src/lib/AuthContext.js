@@ -72,14 +72,20 @@ export const AuthProvider = ({ children }) => {
 
     if (error && error.code === 'PGRST116') {
       // 用户配置不存在，创建新的
-      await supabase
+      const { error: createError } = await supabase
         .from('user_profiles')
         .insert({
           id: user.id,
-          username: user.email?.split('@')[0],
+          username: user.email?.split('@')[0] || `user_${user.id.slice(0, 8)}`,
           full_name: user.user_metadata?.full_name || '',
-          avatar_url: user.user_metadata?.avatar_url || ''
+          avatar_url: user.user_metadata?.avatar_url || '',
+          subscription_tier: 'free',
+          subscription_status: 'inactive'
         })
+      
+      if (createError) {
+        console.error('创建用户配置失败:', createError)
+      }
     }
   }
 

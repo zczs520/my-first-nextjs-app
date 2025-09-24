@@ -32,34 +32,14 @@ export async function POST(req) {
     if (userError) {
       console.error('获取用户信息失败:', userError)
       if (userError.code === 'PGRST116') {
-        // 用户配置不存在，尝试创建
-        const { error: createError } = await supabase
-          .from('user_profiles')
-          .insert({
-            id: userId,
-            subscription_tier: 'free',
-            subscription_status: 'inactive'
-          })
-        
-        if (createError) {
-          console.error('创建用户配置失败:', createError)
-          return NextResponse.json({ error: 'Failed to create user profile' }, { status: 500 })
-        }
-        
-        // 重新获取用户信息
-        const { data: newUser, error: newUserError } = await supabase
-          .from('user_profiles')
-          .select('stripe_customer_id')
-          .eq('id', userId)
-          .single()
-        
-        if (newUserError) {
-          return NextResponse.json({ error: 'User profile creation failed' }, { status: 500 })
-        }
-        
-        user = newUser
+        // 用户配置不存在，这种情况下 stripe_customer_id 为 null
+        console.log('用户配置不存在，将在后续创建 Stripe 客户')
+        user = { stripe_customer_id: null }
       } else {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 })
+        console.error('数据库查询错误:', userError)
+        return NextResponse.json({ 
+          error: 'Database error. Please try again later.' 
+        }, { status: 500 })
       }
     }
     
@@ -72,11 +52,21 @@ export async function POST(req) {
       })
       customerId = customer.id
       
-      // 更新用户的 Stripe 客户 ID
-      await supabase
+      // 更新或创建用户的 Stripe 客户 ID
+      const { error: updateError } = await supabase
         .from('user_profiles')
-        .update({ stripe_customer_id: customerId })
-        .eq('id', userId)
+        .upsert({ 
+          id: userId,
+          stripe_customer_id: customerId,
+          subscription_tier: 'free',
+          subscription_status: 'inactive',
+          updated_at: new Date().toISOString()
+        })
+      
+      if (updateError) {
+        console.error('更新用户 Stripe 客户 ID 失败:', updateError)
+        // 不阻塞流程，继续创建订阅会话
+      }
     }
     
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || getBaseUrl(req)
