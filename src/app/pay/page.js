@@ -21,9 +21,16 @@ export default function PayPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || '创建会话失败')
-      // Generate QR data URL from the session URL
-      const qrDataUrl = await QRCodeLib.toDataURL(data.url, { margin: 2, width: 220 })
-      setPayUrl(qrDataUrl)
+      
+      // 微信支付和支付宝直接跳转，卡支付显示二维码
+      if (paymentMethod === 'wechat_pay' || paymentMethod === 'alipay') {
+        // 直接跳转到支付页面，简化用户体验
+        window.location.href = data.url
+      } else {
+        // 卡支付显示二维码（因为通常在桌面端使用）
+        const qrDataUrl = await QRCodeLib.toDataURL(data.url, { margin: 2, width: 220 })
+        setPayUrl(qrDataUrl)
+      }
     } catch (e) {
       setError(e.message)
     } finally {
@@ -87,7 +94,9 @@ export default function PayPage() {
           </div>
 
           <button onClick={createSession} disabled={loading} className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-60">
-            {loading ? '创建会话中...' : `创建${paymentMethod === 'card' ? '卡' : paymentMethod === 'alipay' ? '支付宝' : '微信'}支付会话`}
+            {loading ? '创建会话中...' : 
+             paymentMethod === 'card' ? '生成支付二维码' :
+             paymentMethod === 'alipay' ? '跳转支付宝支付' : '跳转微信支付'}
           </button>
 
           {error && <div className="text-red-600 text-sm">{error}</div>}
