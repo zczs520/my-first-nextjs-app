@@ -35,7 +35,8 @@ export async function POST(req) {
 
     const config = paymentConfig[pm] || paymentConfig.card
 
-    const session = await stripe.checkout.sessions.create({
+    // 构建 Checkout Session 配置
+    const sessionConfig = {
       mode: 'payment',
       payment_method_types: [config.method],
       line_items: [
@@ -51,7 +52,18 @@ export async function POST(req) {
       success_url: `${baseUrl}/pay/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/pay/cancel`,
       locale: config.locale,
-    })
+    }
+
+    // 微信支付需要特殊配置
+    if (pm === 'wechat_pay') {
+      sessionConfig.payment_method_options = {
+        wechat_pay: {
+          client: 'web'
+        }
+      }
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig)
 
     return NextResponse.json({ id: session.id, url: session.url, pm })
   } catch (err) {
