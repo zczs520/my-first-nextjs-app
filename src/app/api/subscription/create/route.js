@@ -93,6 +93,14 @@ export async function POST(req) {
     
     console.log(`Creating subscription session for user ${userId}, plan: ${planType}, priceId: ${priceId}`)
     
+    // 验证价格 ID 格式
+    if (priceId && !priceId.startsWith('price_')) {
+      console.error(`Invalid price ID format: ${priceId}. Price IDs should start with 'price_', not 'prod_'`)
+      return NextResponse.json({ 
+        error: `Invalid price ID format. Please check your Stripe configuration. Expected format: price_xxxxx, got: ${priceId}` 
+      }, { status: 500 })
+    }
+    
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customerId,
