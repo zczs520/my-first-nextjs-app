@@ -7,6 +7,7 @@ export default function PayPage() {
   const [payUrl, setPayUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState('card') // 默认卡支付
 
   const createSession = async () => {
     setLoading(true)
@@ -16,7 +17,7 @@ export default function PayPage() {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount }),
+        body: JSON.stringify({ amount, paymentMethod }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || '创建会话失败')
@@ -38,14 +39,55 @@ export default function PayPage() {
 
         <div className="bg-white rounded-lg shadow p-6 space-y-4">
           <div>
+            <label className="block text-sm text-gray-600 mb-1">支付方式</label>
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('card')}
+                className={`px-3 py-2 rounded text-sm border ${
+                  paymentMethod === 'card' 
+                    ? 'bg-blue-600 text-white border-blue-600' 
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                💳 卡支付
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('alipay')}
+                className={`px-3 py-2 rounded text-sm border ${
+                  paymentMethod === 'alipay' 
+                    ? 'bg-blue-600 text-white border-blue-600' 
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                💰 支付宝
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('wechat_pay')}
+                className={`px-3 py-2 rounded text-sm border ${
+                  paymentMethod === 'wechat_pay' 
+                    ? 'bg-blue-600 text-white border-blue-600' 
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                💬 微信支付
+              </button>
+            </div>
+          </div>
+
+          <div>
             <label className="block text-sm text-gray-600 mb-1">金额（分）</label>
             <input type="number" value={amount} onChange={e => setAmount(parseInt(e.target.value || '0', 10))}
               className="w-full border px-3 py-2 rounded" min={100} step={10} />
-            <div className="text-xs text-gray-500 mt-1">¥{(amount / 100).toFixed(2)}</div>
+            <div className="text-xs text-gray-500 mt-1">
+              {paymentMethod === 'card' ? `$${(amount / 100).toFixed(2)}` : `¥${(amount / 100).toFixed(2)}`}
+            </div>
           </div>
 
-          <button onClick={createSession} disabled={loading} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-60">
-            {loading ? '创建会话中...' : '创建支付会话'}
+          <button onClick={createSession} disabled={loading} className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-60">
+            {loading ? '创建会话中...' : `创建${paymentMethod === 'card' ? '卡' : paymentMethod === 'alipay' ? '支付宝' : '微信'}支付会话`}
           </button>
 
           {error && <div className="text-red-600 text-sm">{error}</div>}

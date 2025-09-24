@@ -23,7 +23,8 @@ export async function POST(req) {
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || getBaseUrl(req)
-    const pm = (process.env.STRIPE_PM || 'card').toLowerCase() // 'card' | 'alipay' | 'wechat_pay'
+    // 优先使用前端传来的支付方式，fallback 到环境变量
+    const pm = (body.paymentMethod || process.env.STRIPE_PM || 'card').toLowerCase()
 
     // 支付方式配置
     const paymentConfig = {
