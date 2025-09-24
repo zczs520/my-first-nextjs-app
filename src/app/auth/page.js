@@ -105,11 +105,23 @@ export default function AuthPage() {
         }
       }
     } catch (error) {
-      console.error('认证错误:', error)
+      console.error('认证错误详情:', {
+        error,
+        message: error?.message,
+        status: error?.status,
+        code: error?.code,
+        details: error?.details
+      })
+      
       if (error && error.status === 'TIMEOUT') {
         setMessage('登录请求超时：可能被网络拦截或目标服务不可达。请稍后再试，或检查网络/Supabase 可用性。')
+      } else if (error?.message) {
+        setMessage(`操作失败: ${error.message}`)
+      } else if (typeof error === 'string') {
+        setMessage(`操作失败: ${error}`)
       } else {
-        setMessage(`操作失败: ${error?.message || '未知错误'}`)
+        setMessage('登录失败：网络连接异常或服务暂时不可用，请稍后重试')
+        console.error('未知错误类型:', typeof error, error)
       }
     } finally {
       setLoading(false)

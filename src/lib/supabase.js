@@ -46,7 +46,30 @@ const supabase = (supabaseUrl && supabaseAnonKey)
         flowType: 'pkce',
         storage: typeof window !== 'undefined' ? window.localStorage : undefined,
       },
+      global: {
+        headers: {
+          'X-Client-Info': 'nextjs-app'
+        }
+      },
+      db: {
+        schema: 'public'
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 10
+        }
+      }
     })
   : createMockClient()
+
+// 添加连接状态检查
+if (typeof window !== 'undefined') {
+  console.log('[Supabase] 客户端配置状态:', {
+    hasUrl: Boolean(supabaseUrl),
+    hasKey: Boolean(supabaseAnonKey),
+    isMock: !supabaseUrl || !supabaseAnonKey,
+    url: supabaseUrl ? supabaseUrl.substring(0, 30) + '...' : 'NOT_SET'
+  })
+}
 
 export default supabase
